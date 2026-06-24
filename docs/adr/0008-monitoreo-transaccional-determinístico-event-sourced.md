@@ -1,0 +1,7 @@
+# Monitoreo transaccional como módulo determinístico event-sourced sobre `Operación`
+
+El monitoreo transaccional se construye como un módulo dentro del mismo motor, **sin dependencia externa nueva** (el dato lo aporta el cliente). Una **`Operación`** —una transacción reportada por el cliente, ligada a un sujeto evaluado— es un evento más del log append-only del rastro (ADR-0002). Sobre ese log corre una capa determinística: umbrales por actividad vulnerable + **acumulación en ventanas móviles de 6 meses** + tipo de operación. Un job de Hangfire recalcula las ventanas y, al cruzar un umbral, dispara el **Reloj de aviso** y el aviso XML, reusando el mecanismo de disparadores existente (`Coincidencia detectada`, `Intento de operación`, y ahora `Umbral acumulado`).
+
+**Por qué:** la reforma 2026 vuelve exigible la acumulación de operaciones en 6 meses, los umbrales reportables y el aviso por intento — sin ingerir operaciones no podemos cubrirlo, y es una brecha frente a competidores (KYC Systems). Modelarlo como evento determinístico mantiene la inmutabilidad y trazabilidad del rastro y deja la decisión legalmente sensible en reglas (consistente con ADR-0004: el LLM no decide, a lo más explica). El perfil transaccional resultante alimenta la 5ª dimensión del EBR.
+
+**Consecuencia / límite de alcance:** la **detección de patrones inusuales "con IA"** queda **fuera de alcance de fase 1**; en fase 1 la inusualidad se detecta por reglas (operación fuera del perfil esperado). Persigue el módulo de IA en fase 2, no como me-too inicial.

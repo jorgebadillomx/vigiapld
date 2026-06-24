@@ -1,0 +1,25 @@
+# Team / enterprise overrides for the bmad-code-review skill.
+# Committed to the repo — applies to every developer on the project.
+#
+# Merged over the skill's customize.toml per BMad structural rules:
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append.
+# The skill's own SKILL.md / customize.toml must NOT be edited (overwritten on update);
+# customize here instead.
+#
+# mem0 scope: memorias compartidas del proyecto usan agent_id="PreLavadoDinero"
+# tanto al escribir (add_memory) como al filtrar en lectura (search_memories).
+
+[workflow]
+
+# Recuperar memorias relevantes de mem0 antes de revisar el código.
+activation_steps_append = [
+  "Activa el modo caveman para TODAS tus respuestas durante este workflow: aplica las reglas de la skill `caveman` (comunicación ultra-comprimida, sin relleno ni cortesías, manteniendo exactitud técnica completa) en {communication_language}. Excepción: usa lenguaje normal para advertencias de seguridad, confirmaciones de acciones irreversibles y secuencias multi-paso donde la brevedad cause ambigüedad. El modo caveman permanece activo en cada respuesta hasta que el workflow termine (ver on_complete).",
+  "Consulta el MCP mem0 al iniciar: llama `mcp__mem0-mcp__search_memories` con `filters={\"AND\":[{\"agent_id\":\"PreLavadoDinero\"}]}` y una query relevante para recuperar hallazgos previos (problemas recurrentes, convenciones del proyecto, decisiones de arquitectura y bugs ya conocidos) y úsalos para enfocar la revisión. Si el servidor mem0 no está disponible, omítelo silenciosamente y continúa.",
+]
+
+persistent_facts = [
+  "Escribe en el MCP mem0 cuando más convenga durante la revisión: cada vez que detectes un patrón de hallazgo recurrente, una violación de convención sistemática o una decisión que el equipo debería recordar, llama `mcp__mem0-mcp__add_memory` con `agent_id=\"PreLavadoDinero\"` y un `text` conciso y autocontenido. No dupliques memorias que ya existan ni guardes detalles efímeros de esta conversación. Si mem0 no está disponible, omítelo.",
+]
+
+# Scalar: ejecutado al llegar al paso final. Override wins.
+on_complete = "Antes de terminar, registra en el MCP mem0 (`mcp__mem0-mcp__add_memory` con `agent_id=\"PreLavadoDinero\"`) un resumen conciso de los aprendizajes durables de esta revisión (problemas recurrentes, convenciones a reforzar y riesgos detectados) que sean útiles para futuras revisiones e implementaciones. Omítelo si no hay nada nuevo que valga la pena recordar o si mem0 no está disponible. Luego, si el status final de la story es `done` y no quedaron patch findings abiertos sin resolver: haz `git add` de todos los archivos modificados y nuevos del working tree que pertenezcan a la story (usa `git status` para identificarlos), crea un commit en `develop` con mensaje `review(story-{story_key}): aplicar fixes de code review` más una línea en blanco y bullet points de los cambios realizados, y luego haz push a `develop`. Si hay findings abiertos o el status no es `done`, omite el commit y notifica al usuario. Finalmente, desactiva el modo caveman y regresa a comunicación normal."

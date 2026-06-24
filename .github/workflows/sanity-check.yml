@@ -1,0 +1,85 @@
+name: sanity-check
+
+# Sanity check obligatorio para promover cambios a main.
+# Solo corre en PRs hacia main (y en pushes directos a main como respaldo).
+# develop NO ejecuta este check.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  sanity-check:
+    name: sanity-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validar SKILL.md (frontmatter + name == carpeta)
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail=0
+          count=0
+          # Busca todos los SKILL.md bajo .claude/skills y .agents/skills
+          while IFS= read -r -d '' f; do
+            count=$((count + 1))
+            dir=$(dirname "$f")
+            folder=$(basename "$dir")
+
+            # No vacío
+            if [ ! -s "$f" ]; then
+              echo "::error file=$f::SKILL.md está vacío"
+              fail=1
+              continue
+            fi
+
+            # Primera línea debe ser '---' (frontmatter YAML)
+            first=$(head -n 1 "$f" | tr -d '\r')
+            if [ "$first" != "---" ]; then
+              echo "::error file=$f::No empieza con frontmatter YAML (---)"
+              fail=1
+            fi
+
+            # Debe existir un cierre de frontmatter
+            if ! awk 'NR>1 && /^---[[:space:]]*$/ {found=1; exit} END {exit !found}' "$f"; then
+              echo "::error file=$f::Frontmatter sin cierre (---)"
+              fail=1
+            fi
+
+            # name debe coincidir con el nombre de la carpeta (kebab-case)
+            name=$(grep -m1 '^name:' "$f" | sed -E 's/^name:[[:space:]]*//; s/^["'"'"']//; s/["'"'"']$//' | tr -d '\r')
+            if [ -z "$name" ]; then
+              echo "::error file=$f::Falta el campo 'name' en el frontmatter"
+              fail=1
+            elif [ "$name" != "$folder" ]; then
+              echo "::error file=$f::name '$name' no coincide con la carpeta '$folder'"
+              fail=1
+            fi
+          done < <(find .claude/skills .agents/skills -type f -name 'SKILL.md' -print0 2>/dev/null)
+
+          echo "SKILL.md analizados: $count"
+          if [ "$count" -eq 0 ]; then
+            echo "::error::No se encontró ningún SKILL.md"
+            exit 1
+          fi
+          if [ "$fail" -ne 0 ]; then
+            echo "Sanity check FALLÓ."
+            exit 1
+          fi
+          echo "Sanity check OK."
+
+      - name: Verificar guías de estilo presentes
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=0
+          for g in .claude/docs/skill-style-guide.md .agents/docs/skill-style-guide.md; do
+            if [ ! -s "$g" ]; then
+              echo "::error file=$g::Falta o está vacía la guía de estilo"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] && echo "Guías de estilo presentes." || exit 1

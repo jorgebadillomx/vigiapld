@@ -1,0 +1,26 @@
+# Team / enterprise overrides for the bmad-create-story skill.
+# Committed to the repo — applies to every developer on the project.
+#
+# Merged over the skill's customize.toml per BMad structural rules:
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append.
+# The skill's own SKILL.md / customize.toml must NOT be edited (overwritten on update);
+# customize here instead.
+#
+# mem0 scope: memorias compartidas del proyecto usan agent_id="PreLavadoDinero"
+# tanto al escribir (add_memory) como al filtrar en lectura (search_memories).
+
+[workflow]
+
+# Recuperar memorias relevantes de mem0 antes de redactar la historia.
+activation_steps_append = [
+  "Activa el modo caveman para TODAS tus respuestas durante este workflow: aplica las reglas de la skill `caveman` (comunicación ultra-comprimida, sin relleno ni cortesías, manteniendo exactitud técnica completa) en {communication_language}. Excepción: usa lenguaje normal para advertencias de seguridad, confirmaciones de acciones irreversibles y secuencias multi-paso donde la brevedad cause ambigüedad. El modo caveman permanece activo en cada respuesta hasta que el workflow termine (ver on_complete).",
+  "Consulta el MCP mem0 al iniciar: llama `mcp__mem0-mcp__search_memories` con `filters={\"AND\":[{\"agent_id\":\"PreLavadoDinero\"}]}` y una query relevante a este proyecto o epic para recuperar aprendizajes previos (decisiones técnicas, convenciones, historias relacionadas y gotchas) e incorpóralos al contexto y a las Dev Notes de la historia. Si el servidor mem0 no está disponible, omítelo silenciosamente y continúa.",
+  "Antes de definir o capturar el requerimiento de la historia, activa la skill `grill-me`: entrevista al usuario de forma exhaustiva sobre el requerimiento (alcance, supuestos, casos límite, criterios de aceptación y restricciones), resolviendo cada rama de decisión hasta alcanzar entendimiento compartido. Solo procede a redactar la historia y continuar el workflow cuando el requerimiento esté claro y confirmado por el usuario.",
+]
+
+persistent_facts = [
+  "Escribe en el MCP mem0 cuando más convenga durante la ejecución: cada vez que surja un aprendizaje durable y reutilizable (una decisión de alcance, una convención del proyecto, una dependencia o restricción relevante para futuras historias) llama `mcp__mem0-mcp__add_memory` con `agent_id=\"PreLavadoDinero\"` y un `text` conciso y autocontenido. No dupliques memorias que ya existan ni guardes detalles efímeros de esta conversación. Si mem0 no está disponible, omítelo.",
+]
+
+# Scalar: ejecutado al llegar al paso final (Step 6). Override wins.
+on_complete = "Antes de terminar, registra en el MCP mem0 (`mcp__mem0-mcp__add_memory` con `agent_id=\"PreLavadoDinero\"`) un resumen conciso de los aprendizajes durables de esta historia (decisiones de alcance, supuestos, dependencias y convenciones) que sean útiles para crear o implementar futuras historias. Omítelo si no hay nada nuevo que valga la pena recordar o si mem0 no está disponible. Finalmente, desactiva el modo caveman y regresa a comunicación normal."

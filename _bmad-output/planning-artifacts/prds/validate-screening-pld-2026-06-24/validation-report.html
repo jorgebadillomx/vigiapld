@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>PRD Validation: Motor de Screening PLD/FT (LFPIORPI)</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+
+    --verdict-strong: #16a34a;
+    --verdict-adequate: #65a30d;
+    --verdict-thin: #d97706;
+    --verdict-broken: #dc2626;
+
+    --sev-low: #64748b;
+    --sev-medium: #ca8a04;
+    --sev-high: #ea580c;
+    --sev-critical: #dc2626;
+
+    --grade-exc: #16a34a;
+    --grade-good: #65a30d;
+    --grade-fair: #d97706;
+    --grade-poor: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .title .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .grade {
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    color: white;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .grade-excellent { background: var(--grade-exc); }
+  .grade-good { background: var(--grade-good); }
+  .grade-fair { background: var(--grade-fair); }
+  .grade-poor { background: var(--grade-poor); }
+
+  .synthesis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--muted);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 15.5px;
+  }
+  .synthesis p { margin: 0 0 10px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  .countbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .countpill {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .countpill .n { font-weight: 700; }
+
+  .dimension-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .dim-card .dim-name { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .dim-card .dim-verdict { font-size: 14px; font-weight: 600; }
+
+  section.dimension, section.reviewer-section { margin-bottom: 14px; }
+  section.dimension details, section.reviewer-section details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  section summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section summary::-webkit-details-marker { display: none; }
+  section summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  section details[open] summary::before { transform: rotate(90deg); }
+  section summary h2 {
+    display: inline;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1;
+  }
+  .verdict-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+  }
+  .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
+
+  .dim-body { padding: 4px 20px 18px; }
+  .dim-judgment { color: var(--text); font-size: 14.5px; }
+  .dim-judgment p { margin: 0 0 10px; }
+
+  .findings-list { padding: 0 20px 4px; }
+  article.finding {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  article.finding:first-child { border-top: none; }
+  article.finding header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
+  .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
+  .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
+  .finding-title { margin: 0; font-size: 15px; font-weight: 500; flex: 1; min-width: 200px; }
+  .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+  .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
+  .finding-fix strong { color: var(--muted); font-weight: 500; }
+
+  .reviewer-source {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .mechanical {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .mechanical h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mechanical ul { margin: 0; padding-left: 20px; }
+  .mechanical li { margin-bottom: 4px; color: var(--text); }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  footer .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <header class="report-header">
+      <div class="title">
+        <h1>Motor de Screening PLD/FT (LFPIORPI México) — Validation Report</h1>
+        <div class="subtitle">docs/prd_screening_pld.md</div>
+      </div>
+      <div class="grade grade-fair">Fair</div>
+    </header>
+
+    <div class="synthesis">
+      <p>Como <strong>documento</strong>, este es un PRD fuerte: tesis estratégica explícita y honesta ("el screening no es el diferenciador"), decisiones de implementación cerradas y respaldadas por 9 ADRs coherentes, y un alcance declarado con rigor. El rubric walker lo calificaría como <em>Good</em> por sí solo (una sola dimensión <em>thin</em>, cero críticos de calidad documental).</p>
+      <p>La calificación baja a <strong>Fair</strong> porque las revisiones adversarial y regulatoria sí encontraron hallazgos <strong>críticos</strong> que no son cosméticos. Dos categorías de riesgo dominan: <strong>(1) viabilidad/estrategia</strong> — el alcance "suite completa de 10 módulos en fase 1" contradice frontalmente la recomendación de "arranca delgado" que la propia fuente (el brief) da dos veces, y la regla de homonimia estrella ("RFC + fecha mata el falso positivo") colapsa en el caso de uso central (padrón Excel sin esos datos; listas OFAC/ONU que ni siquiera traen RFC mexicano); y <strong>(2) coherencia de contrato</strong> — el cuerpo del PRD aún usa el modelo de decisión viejo de 3 estados con "indeterminado" (término que CONTEXT.md prohíbe) en lugar de la <code>banda de confianza</code> de 4 estados + matriz <code>(banda × tipo de lista)</code> que ya viven en los ADRs, contaminando el contrato público <code>/v1/</code> y todo el downstream.</p>
+      <p>Ninguna dimensión está <em>broken</em> y todos los hallazgos son direccionables. La ruta a <em>Good/Excellent</em> es concreta: re-sincronizar el vocabulario del PRD con CONTEXT.md/ADR-0004, añadir criterios de aceptación + NFR + Success Metrics, decidir un fasing interno dentro de fase 1, y cerrar las dependencias declaradas "no bloqueantes" (licencia OpenSanctions, esquema XML del SAT, proveedor de identidad) que sí bloquean la viabilidad del canal que las dispara.</p>
+    </div>
+
+    <div class="countbar">
+      <span class="countpill" style="border-color: var(--sev-critical); color: var(--sev-critical);"><span class="n">5</span> Critical</span>
+      <span class="countpill" style="border-color: var(--sev-high); color: var(--sev-high);"><span class="n">10</span> High</span>
+      <span class="countpill" style="border-color: var(--sev-medium); color: var(--sev-medium);"><span class="n">11</span> Medium</span>
+      <span class="countpill" style="border-color: var(--sev-low); color: var(--sev-low);"><span class="n">8</span> Low</span>
+    </div>
+
+    <div class="dimension-summary">
+      <div class="dim-card"><div class="dim-name">Decision-readiness</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+      <div class="dim-card"><div class="dim-name">Substance over theater</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+      <div class="dim-card"><div class="dim-name">Strategic coherence</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+      <div class="dim-card"><div class="dim-name">Done-ness clarity</div><div class="dim-verdict" style="color: var(--verdict-thin)">thin</div></div>
+      <div class="dim-card"><div class="dim-name">Scope honesty</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+      <div class="dim-card"><div class="dim-name">Downstream usability</div><div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div></div>
+      <div class="dim-card"><div class="dim-name">Shape fit</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+    </div>
+
+    <!-- ===== RUBRIC DIMENSIONS ===== -->
+
+    <section class="dimension">
+      <details>
+        <summary><h2>1 · Decision-readiness</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>Accionable por un decisor. Las decisiones se enuncian como decisiones, no se entierran: el encabezado fija "suite completa (decisión del propietario, jun-2026)" y "Capafy se difiere a fase 2". Implementation Decisions (L134–157) es un bloque de decisiones cerradas, cada una trazada a un ADR. Los trade-offs se nombran con lo que se cede (lock-in con Bedrock reconocido, costo mayor de Sonnet admitido y mitigado). Las Open Questions son genuinamente abiertas y etiquetadas con su criticidad ("[CRÍTICO, pendiente, no bloquea el build]").</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Sin callouts [NOTE FOR PM] ni [ASSUMPTION] formales</h3><span class="finding-location">§ todo el PRD</span></header>
+            <div class="finding-note">Las tensiones reales viven en prosa de Further Notes en lugar de marcadores indexables. No resta a decision-readiness (sí están surfaced) pero afecta downstream.</div>
+            <div class="finding-fix"><strong>Fix:</strong> convertir los "[CRÍTICO, pendiente]" y los "a definir" (proveedor de identidad, piso legal, valores de corte) en <code>[NOTE FOR PM]</code>/<code>[ASSUMPTION]</code> indexados.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>2 · Substance over theater</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>Contenido ganado, no mobiliario. El Problem Statement es específico del dominio (rango de sanción exacto, dolor #1 real de homonimia, estado actual "en Excel y a mano"). No hay teatro de personas: los cinco actores manejan decisiones reales del diseño. No hay teatro de innovación: el PRD <em>desinfla</em> explícitamente la novedad del screening ("al menos 6 jugadores MX ya cruzan OFAC/ONU/PEP/69-B") y ubica el foso en algo concreto. Las Testing Decisions definen comportamiento observable para este motor, no boilerplate.</p>
+        </div></div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>3 · Strategic coherence</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>Tiene tesis y apuesta por ella: "el costo real es OpenSanctions, no la IA" gobierna arquitectura y pricing; "el foso es la distribución y el dictamen LFPIORPI-ready, no el screening". La priorización sigue la tesis, no la facilidad. <em>Nota:</em> el reviewer adversarial cuestiona esta coherencia desde fuera — argumenta que el alcance suite contradice la cuña delgada que la tesis implica (ver hallazgos adversariales C1/H4). La dimensión es <em>strong</em> en su construcción interna; la tensión estrategia↔alcance está capturada como crítico adversarial, no como defecto de coherencia documental.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Faltan Success Metrics y counter-metrics explícitos</h3><span class="finding-location">§ todo el PRD</span></header>
+            <div class="finding-note">El PRD apuesta por reducir falsos positivos como valor central pero no fija ninguna métrica que valide esa tesis ni un counter-metric (falsos negativos, % de hits revertidos manualmente, tiempo a dictamen).</div>
+            <div class="finding-fix"><strong>Fix:</strong> añadir sección Success Metrics con 2–4 métricas (precisión real/homónimo, adopción Nivel 1→2, margen por corrida) y ≥1 counter-metric (falsos negativos, dictámenes plantilla por caída de LLM).</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details open>
+        <summary><h2>4 · Done-ness clarity</h2><span class="verdict-pill verdict-thin">thin</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>La dimensión más débil y la que más usará la creación de stories. El PRD describe <em>qué</em> hace el sistema con claridad, pero un ingeniero no sabría cuándo una FR está "done": las 76 User Stories son enunciados de capacidad sin un solo criterio de aceptación; abundan adjetivos no acotados ("dictamen en español claro", "tiempo real"/"síncrono" sin umbral de latencia, sin sección NFR con bounds); y varios umbrales legalmente sensibles se dejan "a calibrar" sin enlazar dónde se resolverán. Se salva parcialmente porque el corazón legalmente sensible <em>sí</em> está acotado (contrato del dictamen campo por campo L139, regla de homonimia como tabla L138, tabla de casos de test L166). Por eso es <em>thin</em> y no <em>broken</em>.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">Ninguna User Story tiene criterios de aceptación</h3><span class="finding-location">§ User Stories L28–132</span></header>
+            <div class="finding-note">Las 76 historias son enunciados de intención sin condición de done. La creación de stories tendrá que inventar los AC — en un producto regulatorio eso invita interpretaciones divergentes de la obligación legal.</div>
+            <div class="finding-fix"><strong>Fix:</strong> añadir AC por historia (o por grupo), aprovechando los implícitos en Implementation/Testing Decisions; enlazar cada historia al campo del contrato / ADR que define su done.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">Umbrales reportables del monitoreo transaccional sin definir</h3><span class="finding-location">§ US-63/64 L113–114, L151, ADR-0008</span></header>
+            <div class="finding-note">El disparo del aviso 24h depende de "cruzar un umbral reportable" pero ni el PRD ni ADR-0008 dan el valor ni la regla por actividad vulnerable. Es la FR de mayor consecuencia legal (perder el plazo = sanción) y no es construible sin esa tabla.</div>
+            <div class="finding-fix"><strong>Fix:</strong> incluir la tabla de umbrales por giro (reforma 2026) como dato de configuración versionado, o marcarla <code>[NOTE FOR PM: bloqueante para épica de monitoreo]</code> y excluir esa épica del primer corte de build hasta resolverla.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">No hay sección NFR con bounds</h3><span class="finding-location">§ todo el PRD</span></header>
+            <div class="finding-note">"Tiempo real"/"síncrono" (US-5, US-42), batch async (US-43), conservación 10 años (US-18) e inmutabilidad (US-19) sin objetivos cuantificados (latencia p95, throughput, RPO/RTO, disponibilidad, tamaño máximo de padrón). Para un SaaS con canal API/ERP estos son contractuales.</div>
+            <div class="finding-fix"><strong>Fix:</strong> añadir sección NFR con latencia del endpoint síncrono, SLA de batch, disponibilidad objetivo y límites de tamaño de padrón/operaciones por corrida.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Adjetivos no testables en el dictamen y la validación</h3><span class="finding-location">§ US-14 L44, Solution L14</span></header>
+            <div class="finding-note">"Redactado en español claro encuadrado en la LFPIORPI" no es verificable. Como el texto del LLM no se asserta (correcto, L161), el "done" del dictamen debe expresarse como "todos los campos del contrato presentes y correctos", no como calidad de prosa.</div>
+            <div class="finding-fix"><strong>Fix:</strong> re-expresar el done del dictamen en términos del contrato de campos + presencia de plantilla de respaldo (<code>redacción: plantilla</code> vs <code>redacción: LLM</code>); bajar la prosa a no-objetivo de test.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">"Filas inválidas o duplicadas" sin regla</h3><span class="finding-location">§ US-4 L32</span></header>
+            <div class="finding-note">Qué hace inválida o duplicada a una fila del padrón (¿por RFC? ¿nombre+fecha?) no está definido; afecta el done de la ingesta.</div>
+            <div class="finding-fix"><strong>Fix:</strong> definir la clave de deduplicación y el conjunto de validaciones mínimas.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>5 · Scope honesty</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>Omisiones explícitas que hacen trabajo real. Out of Scope (L176–188) distingue no-goals deliberados con argumento estratégico (sector financiero/CNBV/SITI "diluye la cuña") de límites de construcción (identidad "se integra, no se construye"). Los límites sutiles que un implementador podría "arreglar" por error están blindados en los ADRs (BC no recursivo, monitoreo sin IA). El posicionamiento legal es honesto sobre lo que el producto NO es responsable.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">"Proveedor a definir" y umbrales "a calibrar" no indexados como pendientes</h3><span class="finding-location">§ L153; ADR-0001/0005/0008</span></header>
+            <div class="finding-note">Decisiones abiertas que un lector apurado podría asumir resueltas; dispersas entre prosa de ADR y Implementation Decisions, sin sección unificada.</div>
+            <div class="finding-fix"><strong>Fix:</strong> consolidar un "Assumptions / Pendientes" al final con cada <code>a definir</code>/<code>a calibrar</code>, su impacto (bloquea épica X / no bloquea) y dónde se resuelve.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>6 · Downstream usability</h2><span class="verdict-pill verdict-adequate">adequate</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>PRD chain-top (alimenta UX → arquitectura → epics/stories). Lo bueno: glosario de dominio robusto (CONTEXT.md, 20+ términos canónicos con <code>_Avoid_</code>), cada sección se sostiene sola, las refs a ADR resuelven, actores con protagonista nombrado. El problema serio: <strong>deriva de vocabulario entre el cuerpo del PRD y el modelo canónico de CONTEXT.md/ADRs</strong> que romperá el source-extract limpio — el generador downstream extrae nombres del cuerpo del PRD, no del glosario, y propagará los términos viejos (<code>indeterminado</code>, "por nombre", "tenant") hacia abajo.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">Deriva del modelo de decisión entre PRD y glosario/ADR-0004</h3><span class="finding-location">§ L18, L138–139, L166 vs CONTEXT L78–86, ADR-0004</span></header>
+            <div class="finding-note">El PRD usa "real/homónimo/indeterminado" (3 estados; <code>indeterminado</code> prohibido en glosario) y trata acción/riesgo como derivados del binario; el modelo canónico usa <code>banda de confianza</code> (4 estados) + matriz <code>(banda × tipo de lista)</code>. El campo <code>decision</code> del contrato hereda el enum viejo.</div>
+            <div class="finding-fix"><strong>Fix:</strong> re-sincronizar Solution, regla de homonimia (L138), contrato del dictamen (L139) y US-7/9/10/11 con la banda de confianza de 4 estados y la matriz de ADR-0004; reemplazar <code>indeterminado</code> por <code>requiere-verificación</code>.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">"Por nombre" vs sujeto evaluado; "tenant"/"cliente" vs Cuenta/Sujeto obligado</h3><span class="finding-location">§ L139, L143, L147, L52, L98 vs CONTEXT L7–22</span></header>
+            <div class="finding-note">El cuerpo del PRD usa términos marcados en <code>_Avoid_</code> del glosario. Downstream propagará la unidad y la frontera de aislamiento equivocadas.</div>
+            <div class="finding-fix"><strong>Fix:</strong> "por nombre"→"por sujeto evaluado", "tenant"→"Cuenta" (metering) o "Sujeto obligado" (aislamiento), "cliente"→"Sujeto obligado" donde aplique.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">El PRD no contiene su propio glosario ni enlaza CONTEXT.md</h3><span class="finding-location">§ encabezado L5</span></header>
+            <div class="finding-note">El encabezado apunta al glosario "del brief" (vocabulario más viejo), no al canónico de CONTEXT.md. Un consumidor downstream no sabe que CONTEXT.md es la fuente de verdad.</div>
+            <div class="finding-fix"><strong>Fix:</strong> en el encabezado, apuntar el glosario explícitamente a <code>CONTEXT.md</code> como fuente canónica; retirar la lista del brief.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">IDs de User Story sin prefijo de tipo</h3><span class="finding-location">§ L28–132</span></header>
+            <div class="finding-note">Numeración corrida 1–76 sin gaps, pero sin prefijo (FR-/UJ-) que las haga citables sin ambigüedad; grupos "monitoreo" (62–66) y "partes relacionadas" (67–69) rompen el agrupamiento temático al ir tras el actor auditor (59–61).</div>
+            <div class="finding-fix"><strong>Fix:</strong> adoptar IDs estables con prefijo (p. ej. <code>UJ-SO-01</code>) o confirmar que la numeración corrida es el ID contractual.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>7 · Shape fit</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>La forma encaja: B2B multi-stakeholder con UX significativa <em>y</em> producto de cumplimiento regulatorio — el PRD honra ambos. UJs con protagonista nombrado load-bearing para los cinco actores; trazabilidad de restricciones como columna vertebral (cada obligación anclada a su artículo; rastro event-sourced para probar cumplimiento). No sobre- ni sub-formalizado. El doble nivel de uso (Nivel 1 puntual / Nivel 2 continuo) modela bien el espectro de clientes. Greenfield reconocido y manejado. Sin findings de forma.</p>
+        </div></div>
+      </details>
+    </section>
+
+    <!-- ===== EXTRA REVIEWERS ===== -->
+
+    <section class="reviewer-section">
+      <details open>
+        <summary><h2>Revisión adversarial (Cynical Review)</h2><span class="reviewer-source">review-adversarial-general.md</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>Un PRD bien escrito y arquitectónicamente coherente que esconde su mayor riesgo a plena vista: pivotó de "cuña delgada" (lo que su propia fuente recomienda dos veces) a "suite completa de 10 módulos en fase 1" para un greenfield de un solo operador, apoyándose en cifras legales sin fuente, una regla de homonimia que se desmorona en el caso de datos común, y dependencias críticas sin cerrar que declara que ninguna "bloquea el build".</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-critical">critical</span><h3 class="finding-title">C1 · El alcance contradice la recomendación explícita de la propia fuente (brief)</h3><span class="finding-location">PRD L3 vs Brief §10 L216, §12 L234</span></header>
+            <div class="finding-note">El brief dice dos veces "arranca delgado y diferenciado por canal; BC y avisos XML como fase 2". El PRD invierte esa recomendación y mete 7 módulos a fase 1, justificándolo solo como "decisión del propietario tras análisis competitivo de KYC Systems" — pero ese análisis es justo lo que el brief consideró antes de recomendar delgado. El propio PRD se contradice (L188 "competir hacia arriba diluye la cuña" vs L195 "brechas cerradas vs KYC Systems").</div>
+            <div class="finding-fix"><strong>Fix:</strong> documentar el dato nuevo que justifica invertir la recomendación de la fuente, o re-evaluar un fasing interno que arranque por la cuña.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-critical">critical</span><h3 class="finding-title">C2 · Suite de 10 módulos en fase 1 para greenfield de un operador, sin fasing interno</h3><span class="finding-location">PRD L3, L18–20, L134–157, L199</span></header>
+            <div class="finding-note">Fase 1 incluye ~10 dominios funcionales nuevos + toda la plomería transversal (multi-tenancy, auth, billing, inmutabilidad legal). El PRD no incluye secuenciación ni MVP dentro de fase 1; trata los 10 módulos como un entregable atómico. El módulo más débil define la credibilidad de todo el producto de cumplimiento.</div>
+            <div class="finding-fix"><strong>Fix:</strong> añadir una sección "qué construimos primero dentro de fase 1" con secuenciación y un MVP interno verificable.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-critical">critical</span><h3 class="finding-title">C3 · Cifras/artículos/plazos legales como hechos, con la verificación admitida pendiente</h3><span class="finding-location">PRD L12, L56/65/113/115, L198</span></header>
+            <div class="finding-note">Montos UMA, "reforma marzo 2026", aviso 24h (Art. 7 Bis), ventana 6 meses, Art. 12 Bis / 18 Fr. VII se afirman como hecho sin fuente verificable — mientras el propio PRD admite (L198) que "varias reglas de carácter general siguen publicándose". Se codifica lógica determinística legalmente sensible sobre reglas aún no finales.</div>
+            <div class="finding-fix"><strong>Fix:</strong> citar fuente (DOF) por afirmación; marcar las reglas no finales como configuración versionada calibrable; no congelar lógica sobre reglas pendientes.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-critical">critical</span><h3 class="finding-title">C4 · La regla de homonimia colapsa en el caso común (Excel sin RFC/fecha; listas sin RFC MX)</h3><span class="finding-location">PRD L18, L138, L143; US-2 L30</span></header>
+            <div class="finding-note">"RFC + fecha mata el falso positivo", pero US-2 admite "mínimo solo nombres". Un padrón típico de joyería/casa de empeño no trae fecha ni RFC limpio; y las listas OFAC/ONU/UE tampoco traen RFC mexicano. En el caso común todo cae en <code>requiere-verificación</code>: el producto que vende "resuelvo tu dolor #1" devuelve "revísalo tú". El diferenciador estrella se evapora en datos reales.</div>
+            <div class="finding-fix"><strong>Fix:</strong> cuantificar en qué fracción de padrones reales existen los datos llave a ambos lados; ajustar el marketing del PRD a la realidad de la banda <code>requiere-verificación</code>; explorar señales secundarias de desempate (domicilio, nacionalidad, alias).</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">H1 · Licencia OpenSanctions OEM/reseller sin cerrar, "no bloquea el build" es engañoso</h3><span class="finding-location">PRD L192; Brief §11 L222</span></header>
+            <div class="finding-note">El propio PRD lo marca CRÍTICO y "el mayor swing del ROI", pero "no bloquea el build". El canal API/white-label de fase 1 es <em>precisamente</em> el caso reseller que más probablemente cae fuera del API de €0.10/consulta. Define si el costo variable es €0.10 o una licencia plana de coste desconocido.</div>
+            <div class="finding-fix"><strong>Fix:</strong> cerrar por escrito con ventas de OpenSanctions antes de construir el canal white-label, no después.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">H2 · "El LLM solo redacta" no impide fuga de criterio entre prosa y verdicto</h3><span class="finding-location">PRD L18, L137, L144, L161</span></header>
+            <div class="finding-note">Si Claude redacta prosa que matiza/contradice el campo <code>decision</code> y los textos del LLM no se assertan (L161), el texto que el humano archiva diverge del verdicto estructurado. El expediente "auditable" contendría una contradicción interna explotable por un auditor adversarial. "El LLM solo redacta" aísla el cálculo, no la comunicación — y la comunicación es el producto.</div>
+            <div class="finding-fix"><strong>Fix:</strong> añadir una verificación de fidelidad prosa↔campos (p. ej. el dictamen debe citar literalmente la banda y la acción del verdicto; test de consistencia que rechace prosa contradictoria).</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">H3 · Esquema XML oficial del SAT: dependencia no controlada tratada como disponible</h3><span class="finding-location">PRD US-26 L62, L149</span></header>
+            <div class="finding-note">El módulo de avisos (fase 1) promete validar contra "el esquema oficial del SAT", pero el PRD nunca dice que lo tenga, dónde está, ni si es público y estable. Si el XML rebota en el portal SPPLD por discrepancia de esquema, el cliente pierde el plazo legal y la culpa percibida es del producto.</div>
+            <div class="finding-fix"><strong>Fix:</strong> confirmar existencia/estabilidad del XSD oficial; añadir ADR de avisos XML con fuente, versionado y refresco del esquema (ver regulatorio H-2).</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">H4 · El diferenciador defendible es delgado/replicable; el único foso real (Capafy) se difiere</h3><span class="finding-location">PRD L194–195; Brief §10 L196</span></header>
+            <div class="finding-note">Capafy (foso genuinamente vacío) está en fase 2; dictamen LLM + homonimia es frágil (C4) y replicable; "cola larga" es un segmento no un foso; "API LFPIORPI-ready" el brief mismo dice que "no defiende nada". Se gasta el esfuerzo de fase 1 igualando features commodity en vez del único canal sin competencia.</div>
+            <div class="finding-fix"><strong>Fix:</strong> re-sopesar adelantar el canal Capafy o concentrar fase 1 en lo no-replicable; no construir el cuerpo me-too difiriendo la cabeza diferenciada.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">H5 · Cambio a Claude/Bedrock (20-50x costo IA) sin re-derivar la economía unitaria</h3><span class="finding-location">ADR-0007; PRD L193; Brief §9 L145–153</span></header>
+            <div class="finding-note">El brief modeló DeepSeek (~$0.05 de IA por corrida de 500). El PRD cambia a Claude Sonnet en Bedrock (~$3/$15 por 1M, ~20-50x) pero no rehace el cálculo unitario; "pocos dólares" reemplaza "$0.05", apoyado en caché manual no construida y pricing regional no verificado.</div>
+            <div class="finding-fix"><strong>Fix:</strong> re-derivar el margen por corrida con el pricing real de Bedrock y la fracción de hits que requieren prosa LLM (los <code>descartado-por-nombre</code> usan plantilla sin LLM).</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">M2 · Inmutabilidad 10 años vs protección de datos (LFPDPPP/ARCO) no analizada</h3><span class="finding-location">PRD L19, L51, L145; ADR-0002</span></header>
+            <div class="finding-note">El expediente inmutable a 10 años almacena datos personales sensibles de terceros (los clientes de sus clientes). El PRD no menciona en ningún lado cómo concilia la inmutabilidad PLD con LFPDPPP/derechos ARCO — un segundo régimen legal ignorado por completo.</div>
+            <div class="finding-fix"><strong>Fix:</strong> añadir análisis de protección de datos (base de licitud por obligación legal, cómo se atienden ARCO sin romper inmutabilidad, retención).</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">M3 · ISO 27001 diferida, pero el canal de fase 1 (ERPs) la exige</h3><span class="finding-location">PRD L196</span></header>
+            <div class="finding-note">El propio párrafo admite "su due-diligence suele pedirla; KYC Systems la tiene", y el canal API/white-label/ERP está en fase 1. El canal de mayor leverage puede quedar muerto al arranque sin el sello que su comprador exige.</div>
+            <div class="finding-fix"><strong>Fix:</strong> calendarizar la certificación contra el lanzamiento del canal ERP; whitepaper + responsabilidad compartida AWS como puente, no como sustituto.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">M4 · Refresco automático de SAT 69-B asume fuente estable; falla en silencio</h3><span class="finding-location">PRD L53, L99, L141</span></header>
+            <div class="finding-note">Un job Hangfire contra un Excel publicado a mano por el SAT (URL/columnas/cadencia cambiantes) es frágil: un cambio rompe el refresco en silencio y el producto cruza contra una versión vieja sellando "versión vigente".</div>
+            <div class="finding-fix"><strong>Fix:</strong> añadir detección de staleness (alerta si la lista no se refresca en N días) además del cron optimista.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">M5 · BC/partes "declarados" = paridad de UI, no de valor antilavado</h3><span class="finding-location">PRD L148, L152; ADR-0006</span></header>
+            <div class="finding-note">Límite de alcance defendible (no hay fuente abierta del registro mercantil MX), pero el PRD lo presenta como paridad con KYC Systems sin reconocer que "el cliente lo declara" → se screenea al testaferro declarado y se emite evidencia "limpia" de algo no verificado (falsa tranquilidad).</div>
+            <div class="finding-fix"><strong>Fix:</strong> ser explícito en el PRD/marketing sobre cuánto reduce el valor el "declarado, no resuelto"; no venderlo como paridad de valor antilavado.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">L1 · Diseñar el motor para Capafy (fase 2) desde fase 1 — YAGNI parcial</h3><span class="finding-location">PRD L4, L24, L136</span></header>
+            <div class="finding-note">Diseñar el contrato <code>/v1/</code> para un canal cuyos requisitos reales no se conocen hasta construirlo es especulación arquitectónica (riesgo bajo: el contrato API es útil de todos modos).</div>
+            <div class="finding-fix"><strong>Fix:</strong> no sobre-generalizar el contrato por Capafy; mantenerlo guiado por los canales de fase 1.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">L2 · Volumen de requiere-verificación no dimensionado</h3><span class="finding-location">PRD US-2 L30; ADR-0001</span></header>
+            <div class="finding-note">Combinado con padrones de solo-nombre (C4), la zona gris puede producir alto volumen de revisión manual — el trabajo que el producto promete eliminar. Sin estimación de la tasa esperada.</div>
+            <div class="finding-fix"><strong>Fix:</strong> dimensionar la tasa esperada de zona gris vía política de corte; instrumentarla como métrica.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">L3 · Caché de prompt manual de Bedrock asumida como gratis</h3><span class="finding-location">PRD L144; ADR-0007</span></header>
+            <div class="finding-note">El ahorro de IA depende de caché manual de Bedrock (tamaño mínimo de prefijo, TTL, puntos de quiebre) que requiere ingeniería y no siempre aplica a prompts cortos. Contribuye a H5.</div>
+            <div class="finding-fix"><strong>Fix:</strong> validar el ahorro real de la caché antes de apoyar la economía en él.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="reviewer-section">
+      <details open>
+        <summary><h2>Coherencia regulatoria LFPIORPI</h2><span class="reviewer-source">review-regulatorio-lfpiorpi.md</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>Regulatoriamente sólido en posicionamiento ("herramienta de apoyo, no garantía") y mayormente coherente con los 9 ADRs, pero arrastra deriva terminológica en la regla de homonimia ("indeterminado" prohibido por CONTEXT/ADR-0004) y una promesa no respaldada por diseño (validación del XML contra el esquema oficial del SAT). Verificado coherente: posicionamiento legal en los 3 módulos sensibles, "el LLM solo redacta", LPB confidencial subida por el cliente, rastro inmutable + sello de versión, monitoreo determinístico, y el detalle técnico de Bedrock (<code>anthropic.claude-sonnet-4-6</code>, cliente Mantle — correcto). Nota: 7 afirmaciones legales son internamente consistentes pero <strong>requieren confirmación de un especialista PLD externo</strong> (no verificables solo con coherencia interna).</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-critical">critical</span><h3 class="finding-title">C-1 · "indeterminado" como estado de decisión, prohibido por CONTEXT.md y ADR-0004</h3><span class="finding-location">PRD L138, L139, L166 vs CONTEXT L86, ADR-0004</span></header>
+            <div class="finding-note">CONTEXT.md L86 prohíbe el término ("usar requiere-verificación o descartado-por-nombre"); ADR-0004 define 4 bandas sin "indeterminado". El campo <code>decision</code> es parte del contrato público <code>/v1/</code> (L139): congelarlo con un enum prohibido obliga a un breaking change al alinear. Además debilita la auditoría: "indeterminado" no dice qué dato falta; <code>requiere-verificación</code> sí.</div>
+            <div class="finding-fix"><strong>Fix:</strong> reemplazar "indeterminado" por las 4 bandas en L138/139/166; la regla de homonimia termina en <code>requiere-verificación</code> (score alto sin RFC/fecha) o <code>descartado-por-nombre</code> (score bajo).</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">H-1 · El esquema del dictamen no incorpora la separación identidad↔consecuencia de ADR-0004</h3><span class="finding-location">PRD L139, L150 vs ADR-0004, CONTEXT L79</span></header>
+            <div class="finding-note">ADR-0004 separa resolución de identidad (banda de confianza) de consecuencia AML (acción/riesgo derivados de la matriz <code>banda × tipo de lista</code>). El PRD colapsa todo en <code>decision</code> y no nombra <code>banda_confianza</code> ni <code>tipo_lista</code> como campos. Riesgo: que un PEP escale a rechazo (error que ADR-0004 prohíbe), o EFOS-EDOS a "no operar" automático.</div>
+            <div class="finding-fix"><strong>Fix:</strong> añadir <code>banda_confianza</code> (4 estados) y <code>tipo_lista</code> (sanciones/bloqueados-UIF/PEP/EFOS-EDOS) al contrato L139; declarar que <code>accion_sugerida</code>/<code>nivel_riesgo</code> salen de la matriz, no de <code>decision</code>.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">H-2 · Validación del XML contra el esquema oficial del SAT: promesa sin decisión de implementación</h3><span class="finding-location">PRD US-26 L62, L149, L172</span></header>
+            <div class="finding-note">El PRD promete validar contra el XSD/oficial del SPPLD pero no dice de dónde sale, cómo se versiona ni cómo se refresca (a diferencia de SAT 69-B, que sí lo tiene). No hay ADR de avisos XML. Si el esquema cambia y no hay mecanismo, el XML "validado" se rechaza en el portal.</div>
+            <div class="finding-fix"><strong>Fix:</strong> añadir ADR-0010 de avisos XML: fuente del esquema, versionado, refresco, y plan B si no hay XSD oficial estable (validación estructural propia + presentación sigue siendo del cliente, coherente con Out of Scope L181).</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">M-2 · "tenant" en el PRD pese a estar prohibido por CONTEXT/ADR-0003</h3><span class="finding-location">PRD L52, L98, L147 vs CONTEXT L9/L13, ADR-0003</span></header>
+            <div class="finding-note">El aislamiento de la LPB confidencial y del expediente es <strong>por sujeto obligado</strong> (ADR-0003 L7), no "por tenant". Usar "tenant" difumina dónde vive la frontera legal de aislamiento — la notaría no debe ver la LPB de la joyería de la misma cuenta-despacho.</div>
+            <div class="finding-fix"><strong>Fix:</strong> "tenant"→"Cuenta" (metering/auth/facturación, L52/98) y "Sujeto obligado" (aislamiento de datos/padrón/LPB, L147).</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">M-3 · US-30/US-33 dicen "identificar" el BC, que ADR-0006 deja fuera por diseño</h3><span class="finding-location">PRD US-30/33 L68/71 vs ADR-0006</span></header>
+            <div class="finding-note">ADR-0006 solo screenea el BC <em>declarado</em> y conserva la cadena como evidencia; no resuelve la cadena hasta la persona física última. "Identificar" puede leerse como que el producto resuelve el BC — justo lo que ADR-0006 deja fuera. La obligación de identificar es del sujeto obligado.</div>
+            <div class="finding-fix"><strong>Fix:</strong> reformular US-30/33 a "registrar y conservar el BC que yo declaro".</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">M-1 · "indeterminado" contamina también los seams de prueba</h3><span class="finding-location">PRD L166 (Testing Decisions)</span></header>
+            <div class="finding-note">Misma deriva que C-1 propagada a la spec de pruebas. Tests asertando "indeterminado" quedan acoplados a vocabulario prohibido por los ADRs.</div>
+            <div class="finding-fix"><strong>Fix:</strong> alinear con C-1; la tabla de casos aserta <code>requiere-verificación</code> y <code>descartado-por-nombre</code>.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">L-1 · El brief sigue describiendo DeepSeek; superseded por ADR-0007 sin anotar</h3><span class="finding-location">Brief §5/6/9/12 vs ADR-0007, PRD L144</span></header>
+            <div class="finding-note">El brief (fuente declarada del PRD) describe DeepSeek como el LLM; ADR-0007 lo revirtió a Claude en Bedrock. Deriva esperable, pero el brief no está anotado como obsoleto en ese punto. El argumento de ADR-0007 (residencia de datos AWS más defendible en auditoría) es un punto regulatorio a favor — vale conservarlo visible.</div>
+            <div class="finding-fix"><strong>Fix:</strong> anotar en brief/Further Notes que la decisión de LLM fue superseded por ADR-0007.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">L-2 · Valor del piso legal de rescreening pendiente (coherente entre docs)</h3><span class="finding-location">ADR-0005 L12, CONTEXT L46, PRD L146</span></header>
+            <div class="finding-note">No es incoherencia (todos remiten el valor al especialista). Se marca porque un piso mal calibrado deja descubierto al cliente de plan básico (exposición que ADR-0005 reconoce). Debe cerrarse antes de fijar tiers comerciales.</div>
+            <div class="finding-fix"><strong>Fix:</strong> ninguno en el PRD; cerrar el número con el especialista PLD.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <div class="mechanical">
+      <h3>Notas mecánicas</h3>
+      <ul>
+        <li><strong>Glossary drift (la más material):</strong> el cuerpo del PRD usa términos que CONTEXT.md marca en <code>_Avoid_</code> — <code>indeterminado</code> (L18/138/139/166), <code>tenant</code> (L52/98/147), "por nombre" como entidad (L139/143), "cliente" para el obligado. El PRD nunca usa los términos canónicos refinados (<code>banda de confianza</code>, <code>sujeto evaluado</code>, <code>política de corte</code>, <code>constancia de corrida</code>, <code>tipo de lista</code>, <code>reloj de aviso</code>): todo el modelo refinado vive solo en CONTEXT.md/ADRs y no se reflejó de vuelta al PRD.</li>
+        <li><strong>ID continuity:</strong> User Stories 1–76 sin gaps ni duplicados, pero sin prefijo de tipo (no hay FR-/UJ-/SM-IDs); grupos "monitoreo" (62–66) y "partes relacionadas" (67–69) rompen el agrupamiento temático. Las Implementation Decisions son viñetas sin ID; no hay IDs de Success Metrics (no existen).</li>
+        <li><strong>Cross-refs:</strong> las refs ADR-0001…0009 resuelven todas contra <code>docs/adr/</code>. "brief, Sección 5" y "Fuente: docs/brief_prelavadodinero.md" no se reverificaron línea a línea. US-40 marca correctamente "(Fase 2 — canal Capafy)".</li>
+        <li><strong>Assumptions Index roundtrip:</strong> no existe sección de Assumptions/Pendientes consolidada ni tags <code>[ASSUMPTION]</code> inline; los pendientes (proveedor de identidad, piso legal, umbrales, licencia OpenSanctions, ISO 27001, pricing Bedrock) están dispersos entre Further Notes y los ADRs. El roundtrip no se puede verificar porque el índice no existe.</li>
+        <li><strong>Secciones requeridas para chain-top de alto riesgo:</strong> presentes Problem, Solution, User Stories, Implementation/Testing Decisions, Out of Scope, Further Notes. <strong>Ausentes y esperables:</strong> Success Metrics (+ counter-metrics), una sección NFR con bounds, y un glosario embebido o enlace canónico a CONTEXT.md.</li>
+      </ul>
+    </div>
+
+    <footer class="report-footer">
+      <div class="meta">
+        <span>Rubric: .claude/skills/bmad-prd/assets/prd-validation-checklist.md</span>
+        <span>Reviewers: rubric + adversarial-general + regulatorio-lfpiorpi</span>
+        <span>Generated: 2026-06-24T06:36:19Z</span>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

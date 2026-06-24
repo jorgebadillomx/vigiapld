@@ -1,0 +1,12 @@
+# Avisos XML SPPLD: validación contra esquema con fallback estructural propio
+
+El módulo de avisos genera el XML del aviso (operación reportable y aviso 24h del Art. 7 Bis) a partir del hit y/o los datos de la `Operación`, lo valida, soporta la acumulación en ventanas de 6 meses y registra fecha/acuse de presentación. La **validación del XML depende de un esquema oficial del SAT/SPPLD cuya existencia como XSD público y estable está pendiente de confirmar**. Decisión en dos ramas, ambas detrás de la misma interfaz de validación:
+
+1. **Si existe un XSD oficial estable:** se hospeda, **versiona y refresca** con el mismo patrón que las listas SAT 69-B (job Hangfire + sello de `version_esquema` en el expediente + alerta de staleness), y el XML se valida contra él antes de permitir la descarga.
+2. **Si no hay XSD oficial accesible/estable:** el módulo aplica **validación estructural propia** contra una especificación derivada del formato publicado (campos obligatorios, tipos, catálogos), versionada por el operador; nunca se promete "validado contra el esquema oficial" cuando no se está validando contra él.
+
+En ambos casos la **presentación final del aviso en el portal SPPLD la hace el sujeto obligado** (Out of Scope del PRD): el producto genera, valida lo que puede, y registra el acuse — no presenta en nombre del cliente.
+
+**Por qué:** prometer "validar contra el esquema oficial del SAT" sin tener el XSD en mano es comprometer una obligación regulatoria contra un artefacto externo de disponibilidad no confirmada; si el XML rebota en el portal por discrepancia de esquema, el cliente pierde el plazo legal y la culpa percibida es del producto. Separar las dos ramas detrás de un puerto de validación permite construir el módulo sin bloquearse en la disponibilidad del XSD, y ser honestos en el dictamen/UI sobre qué tipo de validación se aplicó. Es coherente con el resto del diseño (puertos para dependencias externas, sello de versión en el expediente, posicionamiento "herramienta de apoyo, no garantía").
+
+**Consecuencia / pendiente:** queda como pendiente **AS-2** del PRD confirmar con especialista/portal SAT si el XSD oficial existe, es público y estable, y bajo qué cadencia cambia. Mientras no se confirme, el módulo se construye sobre la rama de validación estructural propia y el copy del producto evita afirmar validación oficial. El esquema (oficial o propio) se trata como **configuración versionada**, no como constante en código, porque la reforma 2026 sigue publicando reglas de carácter general.
