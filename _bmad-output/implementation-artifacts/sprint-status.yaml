@@ -1,0 +1,129 @@
+# generated: 2026-06-24
+# last_updated: 2026-06-24
+# project: PreLavadoDinero
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: {project-root}/_bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+#
+# SCOPE NOTES (PreLavadoDinero):
+# ==============================
+# - Epics 1-4 (capas 1-3) are cut to detailed stories. Epics 5-7 (suite, not blocked)
+#   exist at epic level only — detail them in a later pass before starting them.
+# - Epic 8 (monitoreo transaccional) is BLOCKED by AS-4 (umbrales reportables sin confirmar).
+# - Epic 9 (avisos XML SPPLD) is BLOCKED by AS-2 (XSD oficial del SAT sin confirmar).
+#   Blocked epics have no detailed stories and must not be started until the external
+#   data is confirmed with the PLD specialist. They are tracked as 'backlog'.
+
+generated: 2026-06-24
+last_updated: 2026-06-24
+project: PreLavadoDinero
+project_key: NOKEY
+tracking_system: file-system
+story_location: "{project-root}/_bmad-output/implementation-artifacts"
+
+development_status:
+  # ── Epic 1: Motor de dictamen verificable (capa 1) ──
+  epic-1: backlog
+  1-1-inicializar-la-solucion-y-el-esqueleto-del-proyecto: backlog
+  1-2-contexto-de-cuenta-y-sujeto-obligado-con-aislamiento-de-datos: backlog
+  1-3-ingesta-de-padron-con-mapeo-y-validacion-de-columnas: backlog
+  1-4-padron-minimo-de-nombres-que-aprovecha-rfc-y-fecha-de-nacimiento: backlog
+  1-5-puerto-de-opensanctions-con-sello-de-version-de-dataset: backlog
+  1-6-cruce-contra-fuentes-locales-sat-69-69-b-hospedado-y-lpb-del-cliente: backlog
+  1-7-nucleo-deterministico-banda-de-confianza-y-matriz-banda-tipo-lista: backlog
+  1-8-redaccion-del-dictamen-con-llm-y-fidelidad-prosa-verdicto: backlog
+  1-9-contrato-v1-del-dictamen-screening-sincrono-de-un-nombre: backlog
+  1-10-screening-de-padron-completo-y-re-procesamiento-incremental: backlog
+  1-11-expediente-inmutable-event-sourced-con-sello-de-versiones: backlog
+  1-12-ajuste-manual-del-dictamen-registrado-como-evento-auditable: backlog
+  1-13-almacen-worm-de-expedientes-y-export-pdf-excel: backlog
+  epic-1-retrospective: optional
+
+  # ── Epic 2: Portal Vigía capa 1 ──
+  epic-2: backlog
+  2-1-sistema-de-tokens-y-temas-vigia-con-foco-y-contraste-accesibles: backlog
+  2-2-landing-publica-con-urgencia-factual-y-disclaimers: backlog
+  2-3-verificador-en-vivo-de-un-nombre-lead-magnet-sin-registro: backlog
+  2-4-autenticacion-del-portal-y-selector-de-sujeto-obligado-activo: backlog
+  2-5-shell-del-panel-sidebar-responsive-y-modulos-bloqueados-visibles: backlog
+  2-6-subir-padron-con-dropzone-stepper-mapeo-y-validacion: backlog
+  2-7-dashboard-de-resumen-con-kpis-y-estado-del-padron: backlog
+  2-8-tabla-de-dictamenes-filtrable-virtualizada-y-responsive: backlog
+  2-9-detalle-del-dictamen-con-fundamento-prosa-y-expediente: backlog
+  2-10-exportar-y-descargar-el-expediente-historico: backlog
+  2-11-gate-de-accesibilidad-y-rendimiento-del-portal-release-floor: backlog
+  epic-2-retrospective: optional
+
+  # ── Epic 3: Vigencia y continuidad (capa 2) ──
+  epic-3: backlog
+  3-1-refresco-automatico-de-listas-sat-69-b-con-deteccion-de-staleness: backlog
+  3-2-rescreening-recurrente-del-padron-determinista-via-clock-inyectable: backlog
+  3-3-alerta-de-coincidencia-real-sobreviniente: backlog
+  3-4-reloj-de-aviso-de-24-horas-que-cuenta-desde-el-evento-origen: backlog
+  3-5-configuracion-de-cadencia-y-alcance-del-rescreening-con-piso-legal: backlog
+  3-6-historial-de-rescreenings: backlog
+  3-7-vistas-de-auditor-continuidad-de-monitoreo-y-cadena-de-decisiones: backlog
+  epic-3-retrospective: optional
+
+  # ── Epic 4: Canal API / white-label y gateway multi-cuenta (capa 3) ──
+  epic-4: backlog
+  4-1-api-keys-self-serve-rate-limits-y-catalogo-de-errores: backlog
+  4-2-endpoint-sincrono-de-screening-de-un-nombre-para-integradores: backlog
+  4-3-webhooks-de-entrega-confiable-firmados-hmac-outbox: backlog
+  4-4-screening-batch-asincrono-con-job-id-y-resultado-por-webhook-o-poll: backlog
+  4-5-contrato-v1-versionado-con-changelog-y-politica-de-deprecacion: backlog
+  4-6-despacho-multi-cliente-con-separacion-estricta-y-resumen-consolidado: backlog
+  4-7-white-label-reventa-y-ui-incrustable-del-dictamen: backlog
+  4-8-metering-por-cuenta-y-observabilidad-de-costo-por-corrida: backlog
+  4-9-alternar-opensanctions-entre-api-y-self-hosted-tras-el-puerto: backlog
+  4-10-seguridad-de-canal-secretos-en-boveda-cifrado-y-aislamiento-verificable: backlog
+  epic-4-retrospective: optional
+
+  # ── Epic 5: Beneficiario Controlador y partes relacionadas (capa 4 — suite, sin historias detalladas aún) ──
+  epic-5: backlog
+  epic-5-retrospective: optional
+
+  # ── Epic 6: EBR — matriz de riesgo de 5 dimensiones (capa 4 — suite, sin historias detalladas aún) ──
+  epic-6: backlog
+  epic-6-retrospective: optional
+
+  # ── Epic 7: Programa PLD y validación de identidad (capa 4 — suite, sin historias detalladas aún) ──
+  epic-7: backlog
+  epic-7-retrospective: optional
+
+  # ── Epic 8: Monitoreo transaccional (capa 4 — suite) — 🔒 BLOQUEADA (AS-4), sin historias ──
+  epic-8: backlog
+  epic-8-retrospective: optional
+
+  # ── Epic 9: Avisos XML SPPLD (capa 4 — suite) — 🔒 BLOQUEADA (AS-2), sin historias ──
+  epic-9: backlog
+  epic-9-retrospective: optional
